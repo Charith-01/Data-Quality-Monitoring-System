@@ -1,11 +1,17 @@
 import pandas as pd #read and check CSV data
-import re #check email/phone format using patterns
 from datetime import datetime #save checked date and time
 import sys #help Python find files from other folders
 import os #help Python find files from other folders
 
+
 # Allow Python to import config folder
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../../")))
+
+try:
+    from src.utils.report_generator import save_reports
+except ModuleNotFoundError:
+    sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../../")))
+    from src.utils.report_generator import save_reports
 
 from config.data_quality_rules import (
     REQUIRED_COLUMNS,
@@ -261,6 +267,8 @@ if __name__ == "__main__":
     file_path = "data/raw/recruitment_data.csv"
     report = run_data_quality_checks(file_path)
 
+    saved_files = save_reports(report)
+
     print("\nDATA QUALITY CHECK REPORT")
     print("=" * 40)
     print(f"Dataset: {report['dataset_path']}")
@@ -276,3 +284,8 @@ if __name__ == "__main__":
         print(f"Status: {result['status']}")
         print(f"Issues: {result['issue_count']}")
         print(f"Details: {result['details']}")
+
+    print("\nREPORT FILES GENERATED")
+    print("=" * 40)
+    print(f"JSON Report: {saved_files['json_report']}")
+    print(f"CSV Summary: {saved_files['csv_summary']}")
