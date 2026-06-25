@@ -1,0 +1,10 @@
+checked_at,dataset_path,total_rows,total_columns,health_score,health_status,check_name,status,issue_count,details
+2026-06-25 20:46:44,data/processed/uploaded_dataset.csv,9,10,61,Warning,Required Columns Check,Failed,10,"['candidate_id', 'candidate_name', 'email', 'phone', 'job_id', 'job_title', 'application_date', 'experience_years', 'expected_salary', 'source']"
+2026-06-25 20:46:44,data/processed/uploaded_dataset.csv,9,10,61,Warning,Missing Values Check,Passed,0,{}
+2026-06-25 20:46:44,data/processed/uploaded_dataset.csv,9,10,61,Warning,Duplicate Rows Check,Passed,0,0 duplicate rows found
+2026-06-25 20:46:44,data/processed/uploaded_dataset.csv,9,10,61,Warning,Unique Columns Check,Passed,0,{}
+2026-06-25 20:46:44,data/processed/uploaded_dataset.csv,9,10,61,Warning,Email Format Check,Skipped,0,email column not found
+2026-06-25 20:46:44,data/processed/uploaded_dataset.csv,9,10,61,Warning,Phone Format Check,Skipped,0,phone column not found
+2026-06-25 20:46:44,data/processed/uploaded_dataset.csv,9,10,61,Warning,Status Validation Check,Failed,9,"['Passed', 'Failed', 'Failed', 'Failed', 'Failed', 'Failed', 'Failed', 'Passed', 'Failed']"
+2026-06-25 20:46:44,data/processed/uploaded_dataset.csv,9,10,61,Warning,Source Validation Check,Skipped,0,source column not found
+2026-06-25 20:46:44,data/processed/uploaded_dataset.csv,9,10,61,Warning,Numeric Range Check,Passed,0,{}
