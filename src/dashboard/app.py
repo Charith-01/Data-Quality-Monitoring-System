@@ -1,5 +1,7 @@
 import streamlit as st
 import pandas as pd
+import plotly.express as px
+import plotly.graph_objects as go
 import sys
 import os
 
@@ -24,9 +26,14 @@ st.write("Automated system to monitor data integrity, reliability, and quality i
 # Sidebar
 st.sidebar.header("Dataset Selection")
 
-uploaded_file = st.sidebar.file_uploader("Upload CSV Dataset", type=["csv"])
+uploaded_file = st.sidebar.file_uploader("Upload Raw CSV Dataset", type=["csv"])
 
 default_file_path = "data/raw/recruitment_data.csv"
+
+st.sidebar.info(
+    "Upload the raw dataset you want to check. "
+    "Do not upload generated report CSV files."
+)
 
 if uploaded_file is not None:
     temp_file_path = "data/processed/uploaded_dataset.csv"
@@ -41,11 +48,27 @@ else:
     st.sidebar.info("Using default recruitment dataset.")
 
 
+# Dataset preview before running checks
+st.subheader("Selected Dataset Preview")
+
+try:
+    preview_df = pd.read_csv(file_path, dtype=str)
+    st.write(f"**Selected File:** `{file_path}`")
+    st.write(f"**Rows:** {preview_df.shape[0]} | **Columns:** {preview_df.shape[1]}")
+    st.write("**Detected Columns:**")
+    st.write(list(preview_df.columns))
+    st.dataframe(preview_df.head(10), use_container_width=True)
+except Exception as e:
+    st.error(f"Could not preview dataset: {e}")
+
+
 if st.sidebar.button("Run Data Quality Checks"):
     report = run_data_quality_checks(file_path)
     saved_files = save_reports(report)
 
     health = report["health_summary"]
+
+    st.write("---")
 
     st.subheader("Overall Data Health Summary")
 
@@ -98,7 +121,65 @@ if st.sidebar.button("Run Data Quality Checks"):
     st.subheader("Check Results Summary")
 
     results_df = pd.DataFrame(report["check_results"])
-    st.dataframe(results_df[["check_name", "status", "issue_count"]], use_container_width=True)
+
+    st.dataframe(
+        results_df[["check_name", "status", "issue_count"]],
+        use_container_width=True
+    )
+
+    st.write("---")
+
+    st.subheader("Data Quality Visualizations")
+
+    chart_col1, chart_col2 = st.columns(2)
+
+    with chart_col1:
+        status_counts = results_df["status"].value_counts().reset_index()
+        status_counts.columns = ["status", "count"]
+
+        fig_status = px.pie(
+            status_counts,
+            names="status",
+            values="count",
+            title="Check Status Distribution"
+        )
+
+        st.plotly_chart(fig_status, use_container_width=True)
+
+    with chart_col2:
+        fig_issues = px.bar(
+            results_df,
+            x="check_name",
+            y="issue_count",
+            title="Issue Count by Check Type",
+            labels={
+                "check_name": "Check Type",
+                "issue_count": "Issue Count"
+            }
+        )
+
+        fig_issues.update_layout(xaxis_tickangle=-45)
+        st.plotly_chart(fig_issues, use_container_width=True)
+
+    st.subheader("Overall Health Score Gauge")
+
+    fig_gauge = go.Figure(go.Indicator(
+        mode="gauge+number",
+        value=health["health_score"],
+        title={"text": "Data Health Score"},
+        gauge={
+            "axis": {"range": [0, 100]},
+            "bar": {"color": "white"},
+            "steps": [
+                {"range": [0, 50], "color": "#ff4b4b"},
+                {"range": [50, 75], "color": "#ffa500"},
+                {"range": [75, 90], "color": "#f0e442"},
+                {"range": [90, 100], "color": "#00cc96"}
+            ]
+        }
+    ))
+
+    st.plotly_chart(fig_gauge, use_container_width=True)
 
     st.write("---")
 
