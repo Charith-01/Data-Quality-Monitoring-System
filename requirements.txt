@@ -1,0 +1,6 @@
+pandas
+pandera
+streamlit
+plotly
+openpyxl
+apscheduler

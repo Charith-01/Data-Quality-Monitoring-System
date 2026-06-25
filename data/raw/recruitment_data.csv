@@ -1,0 +1,11 @@
+candidate_id,candidate_name,email,phone,job_id,job_title,application_date,status,experience_years,expected_salary,source
+C001,Nimal Perera,nimal@gmail.com,0771234567,J001,Data Analyst,2026-06-01,Pending,2,120000,LinkedIn
+C002,Kasun Silva,kasun@gmail.com,0715557890,J001,Data Analyst,2026-06-02,Shortlisted,3,150000,TopJobs
+C003,Amali Fernando,amali.gmail.com,0778889999,J002,Software Engineer,2026-06-03,Pending,1,100000,LinkedIn
+C004,Sahan Jayasekara,sahan@gmail.com,12345,J002,Software Engineer,2026-06-04,Rejected,4,180000,Referral
+C005,,dilani@gmail.com,0763332222,J003,QA Engineer,2026-06-05,Hired,2,130000,TopJobs
+C006,Ruwan Kumara,ruwan@gmail.com,0774445555,J003,QA Engineer,2026-06-06,Selected,5,200000,LinkedIn
+C007,Tharushi Dias,tharushi@gmail.com,0751112222,J004,Business Analyst,2026-06-07,Pending,-1,90000,Referral
+C008,Chamod Lakshan,chamod@gmail.com,0782223333,J004,Business Analyst,2026-06-08,Shortlisted,2,-50000,LinkedIn
+C009,Isuru Madushan,isuru@gmail.com,0776667777,J005,Project Coordinator,2026-06-09,Rejected,3,140000,TopJobs
+C009,Isuru Madushan,isuru@gmail.com,0776667777,J005,Project Coordinator,2026-06-09,Rejected,3,140000,TopJobs
