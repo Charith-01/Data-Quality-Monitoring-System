@@ -1,8 +1,8 @@
-import pandas as pd
-import re
-from datetime import datetime
-import sys
-import os
+import pandas as pd #read and check CSV data
+import re #check email/phone format using patterns
+from datetime import datetime #save checked date and time
+import sys #help Python find files from other folders
+import os #help Python find files from other folders
 
 # Allow Python to import config folder
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../../")))
@@ -20,7 +20,7 @@ from config.data_quality_rules import (
 def load_data(file_path):
     """Load CSV dataset."""
     try:
-        return pd.read_csv(file_path)
+        return pd.read_csv(file_path, dtype={"phone": str, "candidate_id": str, "job_id": str})
     except FileNotFoundError:
         raise FileNotFoundError(f"File not found: {file_path}")
     except Exception as e:
