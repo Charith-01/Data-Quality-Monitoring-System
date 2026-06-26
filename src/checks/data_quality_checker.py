@@ -21,20 +21,28 @@ from src.utils.report_generator import save_reports
 
 
 def load_data(file_path):
-    """Load CSV dataset."""
-    try:
-        return pd.read_csv(
-            file_path,
-            dtype={
-                "phone": str,
-                "candidate_id": str,
-                "job_id": str
-            }
-        )
-    except FileNotFoundError:
-        raise FileNotFoundError(f"File not found: {file_path}")
-    except Exception as e:
-        raise Exception(f"Error loading file: {e}")
+    """Load CSV dataset with encoding fallback."""
+    encodings = ["utf-8", "utf-8-sig", "latin1", "ISO-8859-1", "cp1252"]
+
+    for encoding in encodings:
+        try:
+            return pd.read_csv(
+                file_path,
+                dtype={
+                    "phone": str,
+                    "candidate_id": str,
+                    "job_id": str
+                },
+                encoding=encoding
+            )
+        except UnicodeDecodeError:
+            continue
+        except FileNotFoundError:
+            raise FileNotFoundError(f"File not found: {file_path}")
+        except Exception as e:
+            raise Exception(f"Error loading file: {e}")
+
+    raise Exception("Unable to read CSV file. Please check file encoding.")
 
 
 def check_required_columns(df):
