@@ -224,3 +224,7 @@ reports/*
 # Temporary uploaded datasets
 data/processed/*
 !data/processed/.gitkeep
+
+# Generated alert logs
+alerts/*
+!alerts/.gitkeep

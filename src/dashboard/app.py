@@ -10,6 +10,7 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../../"
 
 from src.checks.data_quality_checker import run_data_quality_checks
 from src.utils.report_generator import save_reports
+from src.alerts.alert_manager import save_alerts
 
 
 st.set_page_config(
@@ -119,6 +120,7 @@ if st.sidebar.button("Run Data Quality Checks"):
     try:
         report = run_data_quality_checks(file_path, dataset_type=dataset_type)
         saved_files = save_reports(report)
+        alert_result = save_alerts(report)
 
         health = report["health_summary"]
 
@@ -253,6 +255,12 @@ if st.sidebar.button("Run Data Quality Checks"):
 
         st.success(f"JSON Report saved: {saved_files['json_report']}")
         st.success(f"CSV Summary saved: {saved_files['csv_summary']}")
+        if alert_result["alert_count"] > 0:
+            st.warning(f"{alert_result['alert_count']} alert(s) generated.")
+            st.write(f"**Alert file saved:** `{alert_result['alert_file']}`")
+            st.dataframe(pd.DataFrame(alert_result["alerts"]), use_container_width=True)
+        else:
+            st.success("No alerts generated. All checks passed.")
 
     except Exception as e:
         st.error(f"Error while running data quality checks: {e}")
