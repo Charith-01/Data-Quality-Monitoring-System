@@ -220,3 +220,7 @@ __marimo__/
 # Ignore generated report files
 reports/*
 !reports/.gitkeep
+
+# Temporary uploaded datasets
+data/processed/*
+!data/processed/.gitkeep
