@@ -1,17 +1,11 @@
-import pandas as pd #read and check CSV data
-from datetime import datetime #save checked date and time
-import sys #help Python find files from other folders
-import os #help Python find files from other folders
+import pandas as pd  # read and check CSV data
+from datetime import datetime  # save checked date and time
+import sys  # help Python find files from other folders
+import os  # help Python find files from other folders
 
 
-# Allow Python to import config folder
+# Allow Python to import project folders
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../../")))
-
-try:
-    from src.utils.report_generator import save_reports
-except ModuleNotFoundError:
-    sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../../")))
-    from src.utils.report_generator import save_reports
 
 from config.data_quality_rules import (
     REQUIRED_COLUMNS,
@@ -22,11 +16,21 @@ from config.data_quality_rules import (
     NUMERIC_RULES
 )
 
+from src.checks.general_quality_checker import run_general_quality_checks
+from src.utils.report_generator import save_reports
+
 
 def load_data(file_path):
     """Load CSV dataset."""
     try:
-        return pd.read_csv(file_path, dtype={"phone": str, "candidate_id": str, "job_id": str})
+        return pd.read_csv(
+            file_path,
+            dtype={
+                "phone": str,
+                "candidate_id": str,
+                "job_id": str
+            }
+        )
     except FileNotFoundError:
         raise FileNotFoundError(f"File not found: {file_path}")
     except Exception as e:
@@ -51,7 +55,11 @@ def check_missing_values(df):
 
     for col in MANDATORY_FIELDS:
         if col in df.columns:
-            missing_count = df[col].isna().sum() + (df[col].astype(str).str.strip() == "").sum()
+            missing_count = (
+                df[col].isna().sum()
+                + (df[col].astype(str).str.strip() == "").sum()
+            )
+
             if missing_count > 0:
                 issues[col] = int(missing_count)
 
@@ -82,6 +90,7 @@ def check_unique_columns(df):
     for col in UNIQUE_COLUMNS:
         if col in df.columns:
             duplicate_count = df[col].duplicated().sum()
+
             if duplicate_count > 0:
                 issues[col] = int(duplicate_count)
 
@@ -186,10 +195,11 @@ def check_numeric_ranges(df):
     for col, rules in NUMERIC_RULES.items():
         if col in df.columns:
             numeric_col = pd.to_numeric(df[col], errors="coerce")
+
             invalid_rows = df[
-                (numeric_col < rules["min"]) |
-                (numeric_col > rules["max"]) |
-                (numeric_col.isna())
+                (numeric_col < rules["min"])
+                | (numeric_col > rules["max"])
+                | (numeric_col.isna())
             ]
 
             if len(invalid_rows) > 0:
@@ -235,11 +245,9 @@ def calculate_health_score(results):
     }
 
 
-def run_data_quality_checks(file_path):
-    """Run all data quality checks."""
-    df = load_data(file_path)
-
-    results = [
+def run_recruitment_quality_checks(df):
+    """Run recruitment-specific quality checks."""
+    recruitment_results = [
         check_required_columns(df),
         check_missing_values(df),
         check_duplicate_rows(df),
@@ -250,6 +258,22 @@ def run_data_quality_checks(file_path):
         check_valid_source(df),
         check_numeric_ranges(df)
     ]
+
+    return recruitment_results
+
+
+def run_data_quality_checks(file_path):
+    """Run general and recruitment-specific data quality checks."""
+    df = load_data(file_path)
+
+    # General checks work for any dataset structure
+    general_results = run_general_quality_checks(df)
+
+    # Recruitment-specific checks work best for recruitment dataset structure
+    recruitment_results = run_recruitment_quality_checks(df)
+
+    # Combine both result groups
+    results = general_results + recruitment_results
 
     health_summary = calculate_health_score(results)
 
