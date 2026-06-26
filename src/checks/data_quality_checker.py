@@ -46,7 +46,7 @@ def load_data(file_path):
 
 
 def check_required_columns(df):
-    """Check whether all required columns exist."""
+    """Check whether all required recruitment columns exist."""
     missing_columns = [col for col in REQUIRED_COLUMNS if col not in df.columns]
 
     return {
@@ -58,7 +58,7 @@ def check_required_columns(df):
 
 
 def check_missing_values(df):
-    """Check missing values in mandatory fields."""
+    """Check missing values in mandatory recruitment fields."""
     issues = {}
 
     for col in MANDATORY_FIELDS:
@@ -197,7 +197,7 @@ def check_valid_source(df):
 
 
 def check_numeric_ranges(df):
-    """Check numeric columns are inside allowed ranges."""
+    """Check numeric recruitment columns are inside allowed ranges."""
     issues = {}
 
     for col, rules in NUMERIC_RULES.items():
@@ -270,23 +270,33 @@ def run_recruitment_quality_checks(df):
     return recruitment_results
 
 
-def run_data_quality_checks(file_path):
-    """Run general and recruitment-specific data quality checks."""
+def run_data_quality_checks(file_path, dataset_type="Recruitment Dataset"):
+    """
+    Run data quality checks based on selected dataset type.
+
+    General Dataset:
+        Runs only general checks.
+
+    Recruitment Dataset:
+        Runs general checks + recruitment-specific checks.
+    """
     df = load_data(file_path)
 
-    # General checks work for any dataset structure
     general_results = run_general_quality_checks(df)
 
-    # Recruitment-specific checks work best for recruitment dataset structure
-    recruitment_results = run_recruitment_quality_checks(df)
-
-    # Combine both result groups
-    results = general_results + recruitment_results
+    if dataset_type == "General Dataset":
+        results = general_results
+    elif dataset_type == "Recruitment Dataset":
+        recruitment_results = run_recruitment_quality_checks(df)
+        results = general_results + recruitment_results
+    else:
+        results = general_results
 
     health_summary = calculate_health_score(results)
 
     return {
         "dataset_path": file_path,
+        "dataset_type": dataset_type,
         "checked_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         "total_rows": len(df),
         "total_columns": len(df.columns),
@@ -297,13 +307,14 @@ def run_data_quality_checks(file_path):
 
 if __name__ == "__main__":
     file_path = "data/raw/recruitment_data.csv"
-    report = run_data_quality_checks(file_path)
+    report = run_data_quality_checks(file_path, dataset_type="Recruitment Dataset")
 
     saved_files = save_reports(report)
 
     print("\nDATA QUALITY CHECK REPORT")
     print("=" * 40)
     print(f"Dataset: {report['dataset_path']}")
+    print(f"Dataset Type: {report['dataset_type']}")
     print(f"Checked At: {report['checked_at']}")
     print(f"Rows: {report['total_rows']}")
     print(f"Columns: {report['total_columns']}")

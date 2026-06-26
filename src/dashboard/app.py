@@ -39,13 +39,19 @@ st.write("Automated system to monitor data integrity, reliability, and quality i
 # Sidebar
 st.sidebar.header("Dataset Selection")
 
+dataset_type = st.sidebar.selectbox(
+    "Select Dataset Type",
+    ["General Dataset", "Recruitment Dataset"],
+    index=1
+)
+
 uploaded_file = st.sidebar.file_uploader("Upload Raw CSV Dataset", type=["csv"])
 
 default_file_path = "data/raw/recruitment_data.csv"
 
 st.sidebar.info(
-    "Upload the raw dataset you want to check. "
-    "Do not upload generated report CSV files."
+    "Use General Dataset for any CSV file. "
+    "Use Recruitment Dataset only for candidate/recruitment data."
 )
 
 if uploaded_file is not None:
@@ -70,6 +76,7 @@ try:
     preview_df = read_csv_with_fallback(file_path)
 
     st.write(f"**Selected File:** `{file_path}`")
+    st.write(f"**Selected Dataset Type:** `{dataset_type}`")
     st.write(f"**Rows:** {preview_df.shape[0]} | **Columns:** {preview_df.shape[1]}")
 
     st.write("**Detected Columns:**")
@@ -77,13 +84,40 @@ try:
 
     st.dataframe(preview_df.head(10), use_container_width=True)
 
+    if dataset_type == "Recruitment Dataset":
+        expected_columns = [
+            "candidate_id",
+            "candidate_name",
+            "email",
+            "phone",
+            "job_id",
+            "job_title",
+            "application_date",
+            "status",
+            "experience_years",
+            "expected_salary",
+            "source"
+        ]
+
+        missing_preview_columns = [
+            col for col in expected_columns
+            if col not in preview_df.columns
+        ]
+
+        if missing_preview_columns:
+            st.warning(
+                "This file does not fully match the recruitment dataset structure. "
+                "Missing expected columns: "
+                + ", ".join(missing_preview_columns)
+            )
+
 except Exception as e:
     st.error(f"Could not preview dataset: {e}")
 
 
 if st.sidebar.button("Run Data Quality Checks"):
     try:
-        report = run_data_quality_checks(file_path)
+        report = run_data_quality_checks(file_path, dataset_type=dataset_type)
         saved_files = save_reports(report)
 
         health = report["health_summary"]
@@ -110,6 +144,7 @@ if st.sidebar.button("Run Data Quality Checks"):
         col7.metric("Total Checks", health["total_checks"])
 
         st.write(f"**Dataset Path:** {report['dataset_path']}")
+        st.write(f"**Dataset Type:** {report['dataset_type']}")
         st.write(f"**Checked At:** {report['checked_at']}")
 
         st.write("---")
