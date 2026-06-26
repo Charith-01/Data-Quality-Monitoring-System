@@ -122,6 +122,18 @@ if st.sidebar.button("Run Data Quality Checks"):
         saved_files = save_reports(report)
         alert_result = save_alerts(report)
 
+        # Notification popup
+        if alert_result["alert_count"] > 0:
+            st.toast(
+                f"⚠️ {alert_result['alert_count']} data quality alert(s) generated!",
+                icon="⚠️"
+            )
+        else:
+            st.toast(
+                "✅ No data quality alerts generated.",
+                icon="✅"
+            )
+
         health = report["health_summary"]
 
         st.write("---")
@@ -255,10 +267,21 @@ if st.sidebar.button("Run Data Quality Checks"):
 
         st.success(f"JSON Report saved: {saved_files['json_report']}")
         st.success(f"CSV Summary saved: {saved_files['csv_summary']}")
+
+        st.write("---")
+
+        st.subheader("Alert Log")
+
         if alert_result["alert_count"] > 0:
             st.warning(f"{alert_result['alert_count']} alert(s) generated.")
             st.write(f"**Alert file saved:** `{alert_result['alert_file']}`")
-            st.dataframe(pd.DataFrame(alert_result["alerts"]), use_container_width=True)
+
+            alert_df = pd.DataFrame(alert_result["alerts"])
+            st.dataframe(alert_df, use_container_width=True)
+
+            st.info(
+                "These alerts are also saved into the alert log file for future tracking."
+            )
         else:
             st.success("No alerts generated. All checks passed.")
 
