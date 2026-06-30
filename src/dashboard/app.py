@@ -18,6 +18,7 @@ sys.path.append(
 
 
 from src.checks.data_quality_checker import run_data_quality_checks
+from src.checks.data_profiler import generate_data_profile
 from src.utils.report_generator import save_reports
 from src.alerts.alert_manager import save_alerts
 
@@ -30,7 +31,9 @@ st.set_page_config(
 
 
 def read_csv_with_fallback(file_path):
-    """Read CSV using multiple possible encodings."""
+    """
+    Read a CSV file using multiple possible encodings.
+    """
 
     encodings = [
         "utf-8",
@@ -52,12 +55,14 @@ def read_csv_with_fallback(file_path):
             continue
 
     raise Exception(
-        "Unable to preview CSV file due to an encoding issue."
+        "Unable to read the CSV file due to an encoding issue."
     )
 
 
 def read_file_bytes(file_path):
-    """Read a generated file as bytes for Streamlit download buttons."""
+    """
+    Read a generated file as bytes for Streamlit download buttons.
+    """
 
     if not file_path:
         return None
@@ -145,6 +150,9 @@ else:
 st.subheader("Selected Dataset Preview")
 
 
+preview_df = None
+
+
 try:
 
     preview_df = read_csv_with_fallback(
@@ -224,9 +232,20 @@ if st.sidebar.button("Run Data Quality Checks"):
 
     try:
 
+        if preview_df is None:
+            preview_df = read_csv_with_fallback(
+                file_path
+            )
+
+
         report = run_data_quality_checks(
             file_path,
             dataset_type=dataset_type
+        )
+
+
+        profile = generate_data_profile(
+            preview_df
         )
 
 
@@ -350,6 +369,94 @@ if st.sidebar.button("Run Data Quality Checks"):
         st.write(
             f"**Checked At:** "
             f"{report['checked_at']}"
+        )
+
+
+        st.write("---")
+
+
+        # -------------------------------------------------
+        # Dataset Profiling Summary
+        # -------------------------------------------------
+
+        st.subheader(
+            "Dataset Profiling Summary"
+        )
+
+
+        profile_summary = profile[
+            "dataset_summary"
+        ]
+
+
+        profile_col1, profile_col2, profile_col3 = st.columns(3)
+
+
+        profile_col1.metric(
+            "Duplicate Rows",
+            profile_summary["duplicate_rows"]
+        )
+
+
+        profile_col2.metric(
+            "Duplicate Percentage",
+            f"{profile_summary['duplicate_percentage']}%"
+        )
+
+
+        profile_col3.metric(
+            "Total Missing Values",
+            profile_summary["total_missing_values"]
+        )
+
+
+        profile_col4, profile_col5, profile_col6 = st.columns(3)
+
+
+        profile_col4.metric(
+            "Overall Missing Percentage",
+            f"{profile_summary['overall_missing_percentage']}%"
+        )
+
+
+        profile_col5.metric(
+            "Profiled Columns",
+            profile_summary["total_columns"]
+        )
+
+
+        profile_col6.metric(
+            "Profiled Rows",
+            profile_summary["total_rows"]
+        )
+
+
+        st.write("---")
+
+
+        # -------------------------------------------------
+        # Column-Level Data Profile
+        # -------------------------------------------------
+
+        st.subheader(
+            "Column-Level Data Profile"
+        )
+
+
+        column_profile_df = pd.DataFrame(
+            profile["column_profiles"]
+        )
+
+
+        st.dataframe(
+            column_profile_df,
+            use_container_width=True
+        )
+
+
+        st.caption(
+            "The profile shows detected column types, missing values, "
+            "unique values, common values, and numeric statistics."
         )
 
 
