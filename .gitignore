@@ -228,3 +228,7 @@ data/processed/*
 # Generated alert logs
 alerts/*
 !alerts/.gitkeep
+
+# Generated monitoring history
+history/*
+!history/.gitkeep
