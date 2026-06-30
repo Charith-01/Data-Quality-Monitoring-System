@@ -39,7 +39,7 @@ def calculate_dataset_summary(df):
     }
 
 
-def detect_column_type(series):
+def detect_column_type(series, column_name=""):
     """
     Detect a user-friendly column type.
     """
@@ -48,6 +48,24 @@ def detect_column_type(series):
 
     if non_null_series.empty:
         return "Empty"
+
+    column_name_lower = column_name.lower()
+
+    identifier_keywords = [
+        "id",
+        "phone",
+        "mobile",
+        "telephone",
+        "postal",
+        "zip",
+        "code"
+    ]
+
+    if any(
+        keyword in column_name_lower
+        for keyword in identifier_keywords
+    ):
+        return "Identifier"
 
     if pd.api.types.is_bool_dtype(series):
         return "Boolean"
@@ -61,9 +79,6 @@ def detect_column_type(series):
     if pd.api.types.is_numeric_dtype(series):
         return "Numeric"
 
-    if pd.api.types.is_datetime64_any_dtype(series):
-        return "Date/Time"
-
     converted_numeric = pd.to_numeric(
         non_null_series,
         errors="coerce"
@@ -76,17 +91,30 @@ def detect_column_type(series):
     if numeric_percentage >= 90:
         return "Numeric Text"
 
-    converted_dates = pd.to_datetime(
-        non_null_series,
-        errors="coerce"
-    )
+    date_keywords = [
+        "date",
+        "time",
+        "created",
+        "updated",
+        "timestamp"
+    ]
 
-    date_percentage = (
-        converted_dates.notna().mean() * 100
-    )
+    if any(
+        keyword in column_name_lower
+        for keyword in date_keywords
+    ):
+        converted_dates = pd.to_datetime(
+            non_null_series,
+            errors="coerce",
+            format="mixed"
+        )
 
-    if date_percentage >= 90:
-        return "Date/Time Text"
+        date_percentage = (
+            converted_dates.notna().mean() * 100
+        )
+
+        if date_percentage >= 90:
+            return "Date/Time Text"
 
     unique_count = non_null_series.nunique()
 
@@ -128,14 +156,14 @@ def calculate_column_profile(df):
     """
 
     profiles = []
-
     total_rows = len(df)
 
     for column in df.columns:
-
         series = df[column]
 
-        missing_count = int(series.isna().sum())
+        missing_count = int(
+            series.isna().sum()
+        )
 
         if total_rows > 0:
             missing_percentage = round(
@@ -150,12 +178,26 @@ def calculate_column_profile(df):
         )
 
         detected_type = detect_column_type(
-            series
+            series,
+            column
         )
 
-        statistics = calculate_numeric_statistics(
-            series
-        )
+        if detected_type in [
+            "Integer",
+            "Decimal",
+            "Numeric",
+            "Numeric Text"
+        ]:
+            statistics = calculate_numeric_statistics(
+                series
+            )
+        else:
+            statistics = {
+                "minimum": None,
+                "maximum": None,
+                "average": None,
+                "median": None
+            }
 
         most_common_value = None
         most_common_count = 0
@@ -163,7 +205,6 @@ def calculate_column_profile(df):
         non_null_series = series.dropna()
 
         if not non_null_series.empty:
-
             value_counts = (
                 non_null_series
                 .astype(str)
@@ -215,19 +256,57 @@ def generate_data_profile(df):
     }
 
 
+def load_csv_with_fallback(file_path):
+    """
+    Load CSV using multiple possible encodings.
+    """
+
+    encodings = [
+        "utf-8",
+        "utf-8-sig",
+        "latin1",
+        "ISO-8859-1",
+        "cp1252"
+    ]
+
+    for encoding in encodings:
+        try:
+            return pd.read_csv(
+                file_path,
+                dtype={
+                    "phone": str,
+                    "candidate_id": str,
+                    "job_id": str
+                },
+                encoding=encoding
+            )
+
+        except UnicodeDecodeError:
+            continue
+
+        except FileNotFoundError:
+            raise FileNotFoundError(
+                f"File not found: {file_path}"
+            )
+
+        except Exception as error:
+            raise Exception(
+                f"Error loading CSV file: {error}"
+            )
+
+    raise Exception(
+        "Unable to read CSV file. "
+        "Please check the file encoding."
+    )
+
+
 if __name__ == "__main__":
 
     file_path = "data/raw/recruitment_data.csv"
 
     try:
-
-        dataframe = pd.read_csv(
-            file_path,
-            dtype={
-                "phone": str,
-                "candidate_id": str,
-                "job_id": str
-            }
+        dataframe = load_csv_with_fallback(
+            file_path
         )
 
         profile = generate_data_profile(
@@ -251,14 +330,10 @@ if __name__ == "__main__":
             profile_df.to_string(index=False)
         )
 
-    except FileNotFoundError:
-
-        print(
-            f"File not found: {file_path}"
-        )
+    except FileNotFoundError as error:
+        print(error)
 
     except Exception as error:
-
         print(
             f"Error generating data profile: {error}"
         )
