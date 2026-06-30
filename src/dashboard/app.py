@@ -21,6 +21,7 @@ from src.checks.data_quality_checker import run_data_quality_checks
 from src.checks.data_profiler import generate_data_profile
 from src.utils.report_generator import save_reports
 from src.alerts.alert_manager import save_alerts
+from src.history.history_manager import save_history, load_history
 
 
 st.set_page_config(
@@ -44,7 +45,9 @@ def read_csv_with_fallback(file_path):
     ]
 
     for encoding in encodings:
+
         try:
+
             return pd.read_csv(
                 file_path,
                 dtype=str,
@@ -55,26 +58,37 @@ def read_csv_with_fallback(file_path):
             continue
 
     raise Exception(
-        "Unable to read the CSV file due to an encoding issue."
+        "Unable to read the CSV file "
+        "due to an encoding issue."
     )
 
 
 def read_file_bytes(file_path):
     """
-    Read a generated file as bytes for Streamlit download buttons.
+    Read a generated file as bytes for download buttons.
     """
 
     if not file_path:
+
         return None
 
-    if not os.path.exists(file_path):
+    if not os.path.exists(
+        file_path
+    ):
+
         return None
 
-    with open(file_path, "rb") as file:
+    with open(
+        file_path,
+        "rb"
+    ) as file:
+
         return file.read()
 
 
-st.title("📊 Data Quality Monitoring Dashboard")
+st.title(
+    "📊 Data Quality Monitoring Dashboard"
+)
 
 st.write(
     "Automated system to monitor data integrity, "
@@ -86,7 +100,9 @@ st.write(
 # Sidebar
 # ---------------------------------------------------------
 
-st.sidebar.header("Dataset Selection")
+st.sidebar.header(
+    "Dataset Selection"
+)
 
 
 dataset_type = st.sidebar.selectbox(
@@ -105,25 +121,35 @@ uploaded_file = st.sidebar.file_uploader(
 )
 
 
-default_file_path = "data/raw/recruitment_data.csv"
+default_file_path = (
+    "data/raw/recruitment_data.csv"
+)
 
 
 st.sidebar.info(
     "Use General Dataset for any CSV file. "
-    "Use Recruitment Dataset only for candidate or recruitment data."
+    "Use Recruitment Dataset only for "
+    "candidate or recruitment data."
 )
 
 
 if uploaded_file is not None:
 
-    temp_file_path = "data/processed/uploaded_dataset.csv"
+    temp_file_path = (
+        "data/processed/"
+        "uploaded_dataset.csv"
+    )
 
     os.makedirs(
         "data/processed",
         exist_ok=True
     )
 
-    with open(temp_file_path, "wb") as file:
+    with open(
+        temp_file_path,
+        "wb"
+    ) as file:
+
         file.write(
             uploaded_file.getbuffer()
         )
@@ -147,7 +173,9 @@ else:
 # Dataset Preview
 # ---------------------------------------------------------
 
-st.subheader("Selected Dataset Preview")
+st.subheader(
+    "Selected Dataset Preview"
+)
 
 
 preview_df = None
@@ -160,22 +188,30 @@ try:
     )
 
     st.write(
-        f"**Selected File:** `{file_path}`"
+        f"**Selected File:** "
+        f"`{file_path}`"
     )
 
     st.write(
-        f"**Selected Dataset Type:** `{dataset_type}`"
+        f"**Selected Dataset Type:** "
+        f"`{dataset_type}`"
     )
 
     st.write(
-        f"**Rows:** {preview_df.shape[0]} | "
-        f"**Columns:** {preview_df.shape[1]}"
+        f"**Rows:** "
+        f"{preview_df.shape[0]} | "
+        f"**Columns:** "
+        f"{preview_df.shape[1]}"
     )
 
-    st.write("**Detected Columns:**")
+    st.write(
+        "**Detected Columns:**"
+    )
 
     st.write(
-        list(preview_df.columns)
+        list(
+            preview_df.columns
+        )
     )
 
     st.dataframe(
@@ -183,8 +219,9 @@ try:
         use_container_width=True
     )
 
-
-    if dataset_type == "Recruitment Dataset":
+    if dataset_type == (
+        "Recruitment Dataset"
+    ):
 
         expected_columns = [
             "candidate_id",
@@ -200,70 +237,78 @@ try:
             "source"
         ]
 
-
         missing_preview_columns = [
             column
             for column in expected_columns
-            if column not in preview_df.columns
+            if column
+            not in preview_df.columns
         ]
-
 
         if missing_preview_columns:
 
             st.warning(
-                "This file does not fully match the recruitment "
-                "dataset structure. Missing expected columns: "
-                + ", ".join(missing_preview_columns)
+                "This file does not fully match "
+                "the recruitment dataset structure. "
+                "Missing expected columns: "
+                + ", ".join(
+                    missing_preview_columns
+                )
             )
-
 
 except Exception as error:
 
     st.error(
-        f"Could not preview dataset: {error}"
+        f"Could not preview dataset: "
+        f"{error}"
     )
 
 
 # ---------------------------------------------------------
-# Run Data Quality Checks
+# Run Checks
 # ---------------------------------------------------------
 
-if st.sidebar.button("Run Data Quality Checks"):
+if st.sidebar.button(
+    "Run Data Quality Checks"
+):
 
     try:
 
         if preview_df is None:
-            preview_df = read_csv_with_fallback(
-                file_path
+
+            preview_df = (
+                read_csv_with_fallback(
+                    file_path
+                )
             )
 
-
-        report = run_data_quality_checks(
-            file_path,
-            dataset_type=dataset_type
+        report = (
+            run_data_quality_checks(
+                file_path,
+                dataset_type=dataset_type
+            )
         )
 
-
-        profile = generate_data_profile(
-            preview_df
+        profile = (
+            generate_data_profile(
+                preview_df
+            )
         )
-
 
         saved_files = save_reports(
             report
         )
 
-
         alert_result = save_alerts(
             report
         )
 
+        history_result = save_history(
+            report
+        )
 
-        # -------------------------------------------------
-        # Toast Notification
-        # -------------------------------------------------
-
-        if alert_result["alert_count"] > 0:
+        if alert_result[
+            "alert_count"
+        ] > 0:
 
             st.toast(
                 f"{alert_result['alert_count']} "
@@ -278,51 +323,45 @@ if st.sidebar.button("Run Data Quality Checks"):
                 icon="✅"
             )
 
-
-        health = report["health_summary"]
-
+        health = report[
+            "health_summary"
+        ]
 
         st.write("---")
 
-
         # -------------------------------------------------
-        # Overall Health Summary
+        # Health Summary
         # -------------------------------------------------
 
         st.subheader(
             "Overall Data Health Summary"
         )
 
-
-        col1, col2, col3, col4 = st.columns(4)
-
+        col1, col2, col3, col4 = (
+            st.columns(4)
+        )
 
         col1.metric(
             "Health Score",
             f"{health['health_score']}%"
         )
 
-
         col2.metric(
             "Health Status",
             health["health_status"]
         )
-
 
         col3.metric(
             "Failed Checks",
             health["failed_checks"]
         )
 
-
         col4.metric(
             "Total Issues",
             health["total_issues"]
         )
 
-
         st.write("---")
-
 
         # -------------------------------------------------
         # Dataset Information
@@ -332,190 +371,187 @@ if st.sidebar.button("Run Data Quality Checks"):
             "Dataset Information"
         )
 
-
-        col5, col6, col7 = st.columns(3)
-
+        col5, col6, col7 = (
+            st.columns(3)
+        )
 
         col5.metric(
             "Total Rows",
             report["total_rows"]
         )
 
-
         col6.metric(
             "Total Columns",
             report["total_columns"]
         )
-
 
         col7.metric(
             "Total Checks",
             health["total_checks"]
         )
 
-
         st.write(
             f"**Dataset Path:** "
             f"{report['dataset_path']}"
         )
-
 
         st.write(
             f"**Dataset Type:** "
             f"{report['dataset_type']}"
         )
 
-
         st.write(
             f"**Checked At:** "
             f"{report['checked_at']}"
         )
 
-
         st.write("---")
 
-
         # -------------------------------------------------
-        # Dataset Profiling Summary
+        # Dataset Profiling
         # -------------------------------------------------
 
         st.subheader(
             "Dataset Profiling Summary"
         )
 
-
         profile_summary = profile[
             "dataset_summary"
         ]
 
-
-        profile_col1, profile_col2, profile_col3 = st.columns(3)
-
+        profile_col1, profile_col2, profile_col3 = (
+            st.columns(3)
+        )
 
         profile_col1.metric(
             "Duplicate Rows",
-            profile_summary["duplicate_rows"]
+            profile_summary[
+                "duplicate_rows"
+            ]
         )
-
 
         profile_col2.metric(
             "Duplicate Percentage",
             f"{profile_summary['duplicate_percentage']}%"
         )
 
-
         profile_col3.metric(
             "Total Missing Values",
-            profile_summary["total_missing_values"]
+            profile_summary[
+                "total_missing_values"
+            ]
         )
 
-
-        profile_col4, profile_col5, profile_col6 = st.columns(3)
-
+        profile_col4, profile_col5, profile_col6 = (
+            st.columns(3)
+        )
 
         profile_col4.metric(
             "Overall Missing Percentage",
             f"{profile_summary['overall_missing_percentage']}%"
         )
 
-
         profile_col5.metric(
             "Profiled Columns",
-            profile_summary["total_columns"]
+            profile_summary[
+                "total_columns"
+            ]
         )
-
 
         profile_col6.metric(
             "Profiled Rows",
-            profile_summary["total_rows"]
+            profile_summary[
+                "total_rows"
+            ]
         )
 
-
         st.write("---")
-
-
-        # -------------------------------------------------
-        # Column-Level Data Profile
-        # -------------------------------------------------
 
         st.subheader(
             "Column-Level Data Profile"
         )
 
-
-        column_profile_df = pd.DataFrame(
-            profile["column_profiles"]
+        column_profile_df = (
+            pd.DataFrame(
+                profile[
+                    "column_profiles"
+                ]
+            )
         )
-
 
         st.dataframe(
             column_profile_df,
             use_container_width=True
         )
 
-
         st.caption(
-            "The profile shows detected column types, missing values, "
-            "unique values, common values, and numeric statistics."
+            "The profile shows detected types, "
+            "missing values, unique values, "
+            "common values, and numeric statistics."
         )
-
 
         st.write("---")
 
-
         # -------------------------------------------------
-        # Data Quality Alerts
+        # Alerts
         # -------------------------------------------------
 
         st.subheader(
             "Data Quality Alerts"
         )
 
-
-        if health["health_status"] == "Excellent":
+        if health[
+            "health_status"
+        ] == "Excellent":
 
             st.success(
-                "Excellent: Dataset quality is very good."
+                "Excellent: Dataset quality "
+                "is very good."
             )
 
-
-        elif health["health_status"] == "Good":
+        elif health[
+            "health_status"
+        ] == "Good":
 
             st.info(
-                "Good: Dataset has minor quality issues."
+                "Good: Dataset has minor "
+                "quality issues."
             )
 
-
-        elif health["health_status"] == "Warning":
+        elif health[
+            "health_status"
+        ] == "Warning":
 
             st.warning(
-                "Warning: Dataset has several quality issues "
-                "that need attention."
+                "Warning: Dataset has several "
+                "quality issues that need attention."
             )
-
 
         else:
 
             st.error(
-                "Poor: Dataset has serious data quality issues. "
+                "Poor: Dataset has serious "
+                "data quality issues. "
                 "Immediate review is recommended."
             )
 
-
         failed_checks = [
             result
-            for result in report["check_results"]
-            if result["status"] == "Failed"
+            for result
+            in report["check_results"]
+            if result["status"]
+            == "Failed"
         ]
-
 
         if failed_checks:
 
             for check in failed_checks:
 
                 st.error(
-                    f"{check['check_name']} failed with "
-                    f"{check['issue_count']} issue(s)."
+                    f"{check['check_name']} "
+                    f"failed with "
+                    f"{check['issue_count']} "
+                    "issue(s)."
                 )
 
         else:
@@ -524,23 +560,19 @@ if st.sidebar.button("Run Data Quality Checks"):
                 "All checks passed successfully."
             )
 
-
         st.write("---")
 
-
         # -------------------------------------------------
-        # Check Results Summary
+        # Check Results
         # -------------------------------------------------
 
         st.subheader(
             "Check Results Summary"
         )
 
-
         results_df = pd.DataFrame(
             report["check_results"]
         )
-
 
         st.dataframe(
             results_df[
@@ -553,50 +585,48 @@ if st.sidebar.button("Run Data Quality Checks"):
             use_container_width=True
         )
 
-
         st.write("---")
 
-
         # -------------------------------------------------
-        # Visualizations
+        # Charts
         # -------------------------------------------------
 
         st.subheader(
             "Data Quality Visualizations"
         )
 
-
-        chart_col1, chart_col2 = st.columns(2)
-
+        chart_col1, chart_col2 = (
+            st.columns(2)
+        )
 
         with chart_col1:
 
             status_counts = (
-                results_df["status"]
+                results_df[
+                    "status"
+                ]
                 .value_counts()
                 .reset_index()
             )
-
 
             status_counts.columns = [
                 "status",
                 "count"
             ]
 
-
             fig_status = px.pie(
                 status_counts,
                 names="status",
                 values="count",
-                title="Check Status Distribution"
+                title=(
+                    "Check Status Distribution"
+                )
             )
-
 
             st.plotly_chart(
                 fig_status,
                 use_container_width=True
             )
-
 
         with chart_col2:
 
@@ -604,38 +634,34 @@ if st.sidebar.button("Run Data Quality Checks"):
                 results_df,
                 x="check_name",
                 y="issue_count",
-                title="Issue Count by Check Type",
+                title=(
+                    "Issue Count by Check Type"
+                ),
                 labels={
                     "check_name": "Check Type",
                     "issue_count": "Issue Count"
                 }
             )
 
-
             fig_issues.update_layout(
                 xaxis_tickangle=-45
             )
-
 
             st.plotly_chart(
                 fig_issues,
                 use_container_width=True
             )
 
-
-        # -------------------------------------------------
-        # Health Score Gauge
-        # -------------------------------------------------
-
         st.subheader(
             "Overall Health Score Gauge"
         )
 
-
         fig_gauge = go.Figure(
             go.Indicator(
                 mode="gauge+number",
-                value=health["health_score"],
+                value=health[
+                    "health_score"
+                ],
                 title={
                     "text": "Data Health Score"
                 },
@@ -668,26 +694,24 @@ if st.sidebar.button("Run Data Quality Checks"):
             )
         )
 
-
         st.plotly_chart(
             fig_gauge,
             use_container_width=True
         )
 
-
         st.write("---")
 
-
         # -------------------------------------------------
-        # Detailed Issue Information
+        # Detailed Issues
         # -------------------------------------------------
 
         st.subheader(
             "Detailed Issue Information"
         )
 
-
-        for result in report["check_results"]:
+        for result in report[
+            "check_results"
+        ]:
 
             with st.expander(
                 result["check_name"]
@@ -698,76 +722,75 @@ if st.sidebar.button("Run Data Quality Checks"):
                     f"{result['status']}"
                 )
 
-
                 st.write(
                     f"**Issue Count:** "
                     f"{result['issue_count']}"
                 )
 
-
                 st.write(
                     "**Details:**"
                 )
-
 
                 st.write(
                     result["details"]
                 )
 
-
         st.write("---")
 
-
         # -------------------------------------------------
-        # Generated Report Files and Download Buttons
+        # Reports
         # -------------------------------------------------
 
         st.subheader(
             "Generated Report Files"
         )
 
+        json_report_path = (
+            saved_files[
+                "json_report"
+            ]
+        )
 
-        json_report_path = saved_files[
-            "json_report"
-        ]
-
-
-        csv_summary_path = saved_files[
-            "csv_summary"
-        ]
-
+        csv_summary_path = (
+            saved_files[
+                "csv_summary"
+            ]
+        )
 
         st.success(
             f"JSON Report saved: "
             f"{json_report_path}"
         )
 
-
         st.success(
             f"CSV Summary saved: "
             f"{csv_summary_path}"
         )
 
-
-        json_report_data = read_file_bytes(
-            json_report_path
+        json_report_data = (
+            read_file_bytes(
+                json_report_path
+            )
         )
 
-
-        csv_summary_data = read_file_bytes(
-            csv_summary_path
+        csv_summary_data = (
+            read_file_bytes(
+                csv_summary_path
+            )
         )
 
-
-        download_col1, download_col2 = st.columns(2)
-
+        download_col1, download_col2 = (
+            st.columns(2)
+        )
 
         with download_col1:
 
             if json_report_data is not None:
 
                 st.download_button(
-                    label="⬇ Download JSON Report",
+                    label=(
+                        "⬇ Download JSON Report"
+                    ),
                     data=json_report_data,
                     file_name=os.path.basename(
                         json_report_path
@@ -776,19 +799,14 @@ if st.sidebar.button("Run Data Quality Checks"):
                     use_container_width=True
                 )
 
-            else:
-
-                st.error(
-                    "JSON report file could not be loaded."
-                )
-
-
         with download_col2:
 
             if csv_summary_data is not None:
 
                 st.download_button(
-                    label="⬇ Download CSV Summary",
+                    label=(
+                        "⬇ Download CSV Summary"
+                    ),
                     data=csv_summary_data,
                     file_name=os.path.basename(
                         csv_summary_path
@@ -797,15 +815,43 @@ if st.sidebar.button("Run Data Quality Checks"):
                     use_container_width=True
                 )
 
-            else:
-
-                st.error(
-                    "CSV summary file could not be loaded."
-                )
-
-
         st.write("---")
 
+        # -------------------------------------------------
+        # Monitoring History
+        # -------------------------------------------------
+
+        st.subheader(
+            "Monitoring History"
+        )
+
+        history_df = load_history()
+
+        if not history_df.empty:
+
+            st.write(
+                f"**Total monitoring runs:** "
+                f"{history_result['total_history_records']}"
+            )
+
+            st.dataframe(
+                history_df,
+                use_container_width=True
+            )
+
+            st.info(
+                f"Monitoring history saved to: "
+                f"`{history_result['history_file']}`"
+            )
+
+        else:
+
+            st.info(
+                "No monitoring history "
+                "is available yet."
+            )
+
+        st.write("---")
 
         # -------------------------------------------------
         # Alert Log
@@ -815,46 +861,49 @@ if st.sidebar.button("Run Data Quality Checks"):
             "Alert Log"
         )
 
-
-        if alert_result["alert_count"] > 0:
+        if alert_result[
+            "alert_count"
+        ] > 0:
 
             st.warning(
                 f"{alert_result['alert_count']} "
                 "alert(s) generated."
             )
 
-
             st.write(
                 f"**Alert file saved:** "
                 f"`{alert_result['alert_file']}`"
             )
 
-
             alert_df = pd.DataFrame(
-                alert_result["alerts"]
+                alert_result[
+                    "alerts"
+                ]
             )
-
 
             st.dataframe(
                 alert_df,
                 use_container_width=True
             )
 
-
-            alert_file_path = alert_result[
-                "alert_file"
-            ]
-
-
-            alert_file_data = read_file_bytes(
-                alert_file_path
+            alert_file_path = (
+                alert_result[
+                    "alert_file"
+                ]
             )
 
+            alert_file_data = (
+                read_file_bytes(
+                    alert_file_path
+                )
+            )
 
             if alert_file_data is not None:
 
                 st.download_button(
-                    label="⬇ Download Alert Log",
+                    label=(
+                        "⬇ Download Alert Log"
+                    ),
                     data=alert_file_data,
                     file_name=os.path.basename(
                         alert_file_path
@@ -862,33 +911,25 @@ if st.sidebar.button("Run Data Quality Checks"):
                     mime="text/csv"
                 )
 
-            else:
-
-                st.error(
-                    "Alert log file could not be loaded."
-                )
-
-
             st.info(
-                "These alerts are also saved into the "
-                "alert log file for future tracking."
+                "These alerts are saved "
+                "for future tracking."
             )
-
 
         else:
 
             st.success(
-                "No alerts generated. All checks passed."
+                "No alerts generated. "
+                "All checks passed."
             )
-
 
     except Exception as error:
 
         st.error(
-            f"Error while running data quality checks: "
+            "Error while running "
+            "data quality checks: "
             f"{error}"
         )
-
 
 else:
 
