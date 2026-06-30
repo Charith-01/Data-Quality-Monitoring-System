@@ -20,6 +20,7 @@ sys.path.append(
 from src.checks.data_quality_checker import run_data_quality_checks
 from src.utils.report_generator import save_reports
 from src.alerts.alert_manager import save_alerts
+from src.alerts.email_notifier import send_quality_alert_email
 from src.history.history_manager import save_history
 
 
@@ -38,14 +39,15 @@ SCHEDULER_TIMEZONE = (
 
 def run_scheduled_monitoring():
     """
-    Run automatic data quality monitoring.
+    Run the complete automatic data quality monitoring process.
 
-    Scheduled monitoring automatically:
+    Scheduled monitoring:
     - Runs quality checks
     - Saves JSON report
     - Saves CSV report
-    - Saves alert logs
+    - Saves alerts
     - Saves monitoring history
+    - Sends email for serious issues
     """
 
     print("\n" + "=" * 60)
@@ -61,7 +63,6 @@ def run_scheduled_monitoring():
 
     print("=" * 60)
 
-
     try:
 
         report = run_data_quality_checks(
@@ -69,28 +70,31 @@ def run_scheduled_monitoring():
             dataset_type=DEFAULT_DATASET_TYPE
         )
 
-
-        # Scheduled runs automatically save files
-        # inside the reports folder.
+        # Automatically save scheduled reports
         saved_files = save_reports(
             report
         )
-
 
         alert_result = save_alerts(
             report
         )
 
-
         history_result = save_history(
             report
         )
 
+        # Send email only when serious issues exist
+        email_result = (
+            send_quality_alert_email(
+                report,
+                alert_result,
+                saved_files
+            )
+        )
 
         health = report[
             "health_summary"
         ]
-
 
         print(
             f"Dataset: "
@@ -142,6 +146,16 @@ def run_scheduled_monitoring():
             f"{history_result['history_file']}"
         )
 
+        print(
+            f"Email Status: "
+            f"{email_result['status']}"
+        )
+
+        print(
+            f"Email Message: "
+            f"{email_result['message']}"
+        )
+
         print("=" * 60)
 
         print(
@@ -150,6 +164,13 @@ def run_scheduled_monitoring():
 
         print("=" * 60)
 
+        return {
+            "report": report,
+            "saved_files": saved_files,
+            "alert_result": alert_result,
+            "history_result": history_result,
+            "email_result": email_result
+        }
 
     except FileNotFoundError as error:
 
@@ -157,6 +178,12 @@ def run_scheduled_monitoring():
             f"Dataset file error: {error}"
         )
 
+        return {
+            "status": "Failed",
+            "message": str(
+                error
+            )
+        }
 
     except Exception as error:
 
@@ -164,17 +191,23 @@ def run_scheduled_monitoring():
             f"Scheduled monitoring failed: {error}"
         )
 
+        return {
+            "status": "Failed",
+            "message": str(
+                error
+            )
+        }
+
 
 def create_scheduler():
     """
     Create a scheduler that runs every day at 9:00 AM
-    using Sri Lanka time.
+    in Sri Lanka time.
     """
 
     scheduler = BlockingScheduler(
         timezone=SCHEDULER_TIMEZONE
     )
-
 
     scheduler.add_job(
         run_scheduled_monitoring,
@@ -191,14 +224,12 @@ def create_scheduler():
         misfire_grace_time=3600
     )
 
-
     return scheduler
 
 
 if __name__ == "__main__":
 
     scheduler = create_scheduler()
-
 
     print(
         "Data Quality Scheduler Started"
@@ -213,26 +244,28 @@ if __name__ == "__main__":
     )
 
     print(
-        "Scheduled reports will be saved automatically "
+        "Scheduled reports will be saved "
         "inside the reports folder."
+    )
+
+    print(
+        "Serious data quality issues will "
+        "generate an email alert."
     )
 
     print(
         "Press Ctrl + C to stop the scheduler."
     )
 
-
     try:
 
         scheduler.start()
-
 
     except KeyboardInterrupt:
 
         print(
             "\nScheduler stopped by user."
         )
-
 
     except Exception as error:
 
