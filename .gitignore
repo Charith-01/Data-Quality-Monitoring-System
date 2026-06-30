@@ -232,3 +232,6 @@ alerts/*
 # Generated monitoring history
 history/*
 !history/.gitkeep
+
+# Private environment variables
+.env
