@@ -443,7 +443,3 @@ This data dictionary should be reviewed:
 This recruitment data dictionary provides a consistent definition for each field used in the recruitment dataset. It supports accurate data entry, automated validation, data quality monitoring, governance, reporting, and issue correction.
 
 All users who create, update, monitor, or use recruitment data should follow the definitions and validation rules in this document.
-
-```
-Important: when you paste this into the `.md` file, do not include the outer triple backticks that wrap the whole example. Keep only the inner `csv` code blocks.
-```
